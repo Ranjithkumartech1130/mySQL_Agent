@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecruitAI — Intelligent Recruiting Assistant</title>
+  <meta name="description" content="AI-powered recruiting database assistant. Query candidates in Tamil or English using natural language." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --bg-base:       #0a0d14;
+      --bg-card:       #111622;
+      --bg-input:      #161d2e;
+      --bg-hover:      #1c2538;
+      --border:        #1f2d47;
+      --border-glow:   #3b5bdb;
+      --accent-1:      #4c6ef5;
+      --accent-2:      #7c3aed;
+      --accent-grad:   linear-gradient(135deg, #4c6ef5 0%, #7c3aed 100%);
+      --accent-soft:   rgba(76, 110, 245, 0.12);
+      --text-primary:  #e8eaf0;
+      --text-secondary:#8892aa;
+      --text-muted:    #4a5568;
+      --success:       #10b981;
+      --warning:       #f59e0b;
+      --error:         #ef4444;
+      --info:          #3b82f6;
+      --radius-sm:     8px;
+      --radius-md:     14px;
+      --radius-lg:     20px;
+      --shadow-card:   0 4px 32px rgba(0,0,0,0.4);
+      --shadow-glow:   0 0 40px rgba(76, 110, 245, 0.15);
+      --transition:    0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       ANIMATED BACKGROUND MESH
+    ═══════════════════════════════════════════ */
+    .bg-mesh {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 10%, rgba(76,110,245,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 90%, rgba(124,58,237,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(16,185,129,0.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════ */
+    .app {
+      position: relative; z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: var(--accent-grad);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 20px rgba(76,110,245,0.35);
+    }
+    .logo-text {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    .logo-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(16,185,129,0.5);
+    }
+    .status-dot.error {
+      background: var(--error);
+      box-shadow: 0 0 8px rgba(239,68,68,0.5);
+    }
+
+    /* ═══════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════ */
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.8px;
+      margin-bottom: 14px;
+    }
+    .hero h1 span {
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto 24px;
+      line-height: 1.65;
+    }
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+    .chip:hover {
+      border-color: var(--accent-1);
+      color: var(--accent-1);
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    /* ═══════════════════════════════════════════
+       CHAT CONTAINER
+    ═══════════════════════════════════════════ */
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+    }
+
+    /* Message thread */
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 300px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding: 4px 2px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 260px;
+      gap: 14px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .empty-icon { font-size: 3rem; opacity: 0.5; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.6; max-width: 320px; }
+
+    /* Message bubbles */
+    .msg {
+      display: flex;
+      gap: 12px;
+      animation: msgIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .msg.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .avatar.user-av {
+      background: var(--accent-grad);
+      box-shadow: 0 2px 12px rgba(76,110,245,0.3);
+    }
+    .avatar.bot-av {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+
+    .bubble {
+      max-width: 78%;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      position: relative;
+    }
+    .msg.user .bubble {
+      background: var(--accent-grad);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 20px rgba(76,110,245,0.25);
+    }
+    .msg.bot .bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Candidate result table inside bubble */
+    .result-header {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-count {
+      background: var(--accent-soft);
+      color: var(--accent-1);
+      border-radius: 100px;
+      padding: 1px 8px;
+      font-size: 0.73rem;
+      font-weight: 600;
+    }
+    .candidate-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .candidate-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .candidate-row:hover {
+      border-color: var(--accent-1);
+      transform: translateX(2px);
+    }
+    .c-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.75rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .c-info {}
+    .c-name { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); }
+    .c-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+    .c-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-applied   { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .badge-screening { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-interview { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .badge-hired     { background: rgba(16,185,129,0.15); color: #10b981; }
+    .badge-rejected  { background: rgba(239,68,68,0.15);  color: #ef4444; }
+    .exp-badge { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* Meta strip (intent / sql) */
+    .meta-strip {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .meta-tag {
+      font-size: 0.7rem;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'Courier New', monospace;
+    }
+    .meta-tag .label {
+      color: var(--accent-1);
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      margin-right: 4px;
+    }
+
+    /* Typing indicator */
+    .typing-bubble {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 14px 18px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30%            { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ═══════════════════════════════════════════
+       INPUT AREA
+    ═══════════════════════════════════════════ */
+    .input-area {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .input-area:focus-within {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 3px rgba(76,110,245,0.12), var(--shadow-glow);
+    }
+    #query-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      resize: none;
+      max-height: 120px;
+      min-height: 24px;
+    }
+    #query-input::placeholder { color: var(--text-muted); }
+    .send-btn {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent-grad);
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: all var(--transition);
+      box-shadow: 0 4px 14px rgba(76,110,245,0.35);
+    }
+    .send-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(76,110,245,0.5); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ═══════════════════════════════════════════
+       QUICK ACTIONS
+    ═══════════════════════════════════════════ */
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .qa-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 13px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .qa-btn:hover {
+      border-color: var(--accent-1);
+      color: var(--text-primary);
+      background: var(--accent-soft);
+    }
+    .qa-icon { font-size: 14px; }
+
+    /* ═══════════════════════════════════════════
+       STATS BAR
+    ═══════════════════════════════════════════ */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .stat-card:hover {
+      border-color: var(--accent-1);
+      transform: translateY(-2px);
+    }
+    .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .stat-sub   { font-size: 0.73rem; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════════
+       TOAST NOTIFICATIONS
+    ═══════════════════════════════════════════ */
+    .toasts {
+      position: fixed;
+      top: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 1000;
+    }
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+      animation: toastIn 0.3s ease both;
+      display: flex; align-items: center; gap: 8px;
+      min-width: 220px;
+    }
+    .toast.success { border-color: var(--success); }
+    .toast.error   { border-color: var(--error);   }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(20px); }
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .bubble { max-width: 92%; }
+      .candidate-row { grid-template-columns: auto 1fr; }
+      .c-badges { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="toasts" id="toasts"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="logo-text">RecruitAI</div>
+        <div class="logo-sub">Powered by Groq · LangGraph</div>
+      </div>
+    </div>
+    <div class="header-status" id="header-status">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Checking…</span>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Your <span>AI Recruiting</span><br/>Assistant</h1>
+    <p>Ask in English or Tamil — find candidates, update statuses, and search by skills in seconds.</p>
+    <div class="hero-chips" id="hero-chips">
+      <div class="chip" onclick="setQuery(this.textContent)">🔍 Show all candidates</div>
+      <div class="chip" onclick="setQuery(this.textContent)">எனக்கு backend developers வேணும்</div>
+      <div class="chip" onclick="setQuery(this.textContent)">Data Scientists with 3+ yrs exp</div>
+      <div class="chip" onclick="setQuery(this.textContent)">Show screening candidates</div>
+      <div class="chip" onclick="setQuery(this.textContent)">3 years experience உள்ள candidates காட்டு</div>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Total Candidates</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub">in database</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">In Screening</div>
+      <div class="stat-value" id="stat-screening">—</div>
+      <div class="stat-sub">active pipeline</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Interviews</div>
+      <div class="stat-value" id="stat-interview">—</div>
+      <div class="stat-sub">scheduled</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Hired</div>
+      <div class="stat-value" id="stat-hired">—</div>
+      <div class="stat-sub">this cycle</div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-wrap">
+    <div class="messages" id="messages">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>Ask anything about your recruiting pipeline.<br/>Tamil and English both work!</p>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <textarea
+        id="query-input"
+        rows="1"
+        placeholder="Ask in English or Tamil… (Shift+Enter for new line)"
+        autocomplete="off"
+        spellcheck="false"
+      ></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendQuery()" title="Send (Enter)">
+        ➤
+      </button>
+    </div>
+
+    <!-- Quick action buttons -->
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="quickSearch('backend developer', 2)"><span class="qa-icon">👨‍💻</span> Backend Devs 2+ yrs</button>
+      <button class="qa-btn" onclick="quickSearch('data scientist', 3)"><span class="qa-icon">📊</span> Data Scientists 3+ yrs</button>
+      <button class="qa-btn" onclick="quickSearch('full stack developer', 0)"><span class="qa-icon">🧩</span> All Full Stack</button>
+      <button class="qa-btn" onclick="quickSearch('devops engineer', 0)"><span class="qa-icon">⚙️</span> DevOps Engineers</button>
+      <button class="qa-btn" onclick="loadAllCandidates()"><span class="qa-icon">📋</span> All Candidates</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════ */
+const API = 'http://localhost:8000';
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+function toast(msg, type = 'info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  $('toasts').appendChild(t);
+  setTimeout(() => {
+    t.style.animation = 'toastOut 0.3s ease both';
+    setTimeout(() => t.remove(), 300);
+  }, 3200);
+}
+
+const AVATAR_COLORS = [
+  '#4c6ef5','#7c3aed','#10b981','#f59e0b',
+  '#ef4444','#06b6d4','#ec4899','#84cc16',
+];
+function getColor(name) {
+  let hash = 0;
+  for (const c of name) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function initials(name) {
+  return name.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+}
+
+/* ═══════════════════════════════════════════
+   AUTO-RESIZE TEXTAREA
+═══════════════════════════════════════════ */
+const input = $('query-input');
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(); }
+});
+
+/* ═══════════════════════════════════════════
+   SET QUERY FROM CHIP
+═══════════════════════════════════════════ */
+function setQuery(text) {
+  input.value = text.trim();
+  input.focus();
+}
+
+/* ═══════════════════════════════════════════
+   HEALTH CHECK
+═══════════════════════════════════════════ */
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    $('status-dot').className = 'status-dot ' + (d.db === 'connected' ? 'connected' : 'error');
+    $('status-text').textContent = d.db === 'connected'
+      ? `${d.db_mode.toUpperCase()} connected`
+      : 'DB error';
+  } catch {
+    $('status-dot').className = 'status-dot error';
+    $('status-text').textContent = 'API offline';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LOAD STATS
+═══════════════════════════════════════════ */
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/stats`);
+    if (!r.ok) return;
+    const d = await r.json();
+    $('stat-total').textContent     = d.total     ?? '—';
+    $('stat-screening').textContent = d.screening ?? '—';
+    $('stat-interview').textContent = d.interview ?? '—';
+    $('stat-hired').textContent     = d.hired     ?? '—';
+  } catch { /* silent */ }
+}
+
+/* ═══════════════════════════════════════════
+   ADD MESSAGE TO THREAD
+═══════════════════════════════════════════ */
+function addUserMsg(text) {
+  $('empty-state')?.remove();
+  const msgs = $('messages');
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `
+    <div class="avatar user-av">👤</div>
+    <div class="bubble">${escHtml(text)}</div>
+  `;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+function addTypingIndicator() {
+  $('empty-state')?.remove();
+  const msgs = $('messages');
+  const el = document.createElement('div');
+  el.className = 'msg bot';
+  el.id = 'typing';
+  el.innerHTML = `
+    <div class="avatar bot-av">🤖</div>
+    <div class="bubble">
+      <div class="typing-bubble">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+  `;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+function removeTyping() { $('typing')?.remove(); }
+
+function addBotMsg(data) {
+  const msgs = $('messages');
+  const el = document.createElement('div');
+  el.className = 'msg bot';
+
+  const rows = data.db_result || [];
+  const intentColor = {
+    db_select: '#4c6ef5', db_update: '#f59e0b', db_insert: '#10b981', unknown: '#6b7280'
+  }[data.intent] || '#6b7280';
+
+  let innerHtml = '';
+
+  // Check if we have a list of candidate records
+  const isCandidateList = rows.length > 0 && rows[0] && ('name' in rows[0]) && ('role' in rows[0]);
+
+  if (isCandidateList) {
+    innerHtml += `
+      <div class="result-header">
+        <span>Found</span>
+        <span class="result-count">${rows.length} candidate${rows.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="candidate-list">
+    `;
+    rows.forEach(c => {
+      const color = getColor(c.name || 'X');
+      const statusBadge = c.status ? `<span class="badge badge-${c.status}">${c.status}</span>` : '';
+      innerHtml += `
+        <div class="candidate-row">
+          <div class="c-avatar" style="background:${color}">${initials(c.name||'?')}</div>
+          <div class="c-info">
+            <div class="c-name">${escHtml(c.name||'—')}</div>
+            <div class="c-meta">${escHtml(c.role||'—')} · ${escHtml(c.phone||'—')}</div>
+          </div>
+          <div class="c-badges">
+            ${statusBadge}
+            <span class="exp-badge">${c.experience ?? 0} yrs</span>
+          </div>
+        </div>
+      `;
+    });
+    innerHtml += `</div>`;
+  } else {
+    // Dynamic text/markdown response
+    innerHtml += `<div class="md-response" style="width:100%; word-break:break-word;">${parseMarkdown(data.response || 'No response')}</div>`;
+  }
+
+  // Meta strip
+  innerHtml += `
+    <div class="meta-strip">
+      <span class="meta-tag"><span class="label">intent</span>${data.intent||'—'}</span>
+      <span class="meta-tag"><span class="label">conf</span>${((data.confidence||0)*100).toFixed(0)}%</span>
+      ${data.sql_ran ? `<span class="meta-tag"><span class="label">sql</span>${escHtml(data.sql_ran.slice(0,60))}…</span>` : ''}
+    </div>
+  `;
+
+  el.innerHTML = `<div class="avatar bot-av">🤖</div><div class="bubble" style="width:100%; max-width:85%;">${innerHtml}</div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function parseMarkdown(text) {
+  if (!text) return '';
+  
+  let html = escHtml(text);
+  
+  // Replace triple backtick blocks (code)
+  html = html.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--bg-input); border:1px solid var(--border); padding:10px; border-radius:var(--radius-sm); overflow-x:auto; font-family:monospace; margin:10px 0;"><code>$1</code></pre>');
+  // Replace single backticks
+  html = html.replace(/`([^`]+)`/g, '<code style="background:var(--bg-input); padding:2px 6px; border-radius:4px; font-family:monospace;">$1</code>');
+  
+  // Replace headings
+  html = html.replace(/^### (.*$)/gim, '<h3 style="margin-top:14px; margin-bottom:8px; font-size:1rem; font-weight:700; color:var(--text-primary);">$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2 style="margin-top:18px; margin-bottom:10px; font-size:1.15rem; font-weight:800; color:var(--text-primary);">$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1 style="margin-top:22px; margin-bottom:12px; font-size:1.3rem; font-weight:800; color:var(--text-primary);">$1</h1>');
+  
+  // Replace bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text-primary); font-weight:600;">$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Replace bullet points
+  html = html.replace(/^\s*•\s+(.*$)/gim, '<li style="margin-left:20px; margin-bottom:4px;">$1</li>');
+  html = html.replace(/^\s*-\s+(.*$)/gim, '<li style="margin-left:20px; margin-bottom:4px;">$1</li>');
+  
+  // Split lines to find tables
+  const lines = html.split('\n');
+  let inTable = false;
+  let tableHtml = '';
+  let finalLines = [];
+  let rowCount = 0;
+  
+  for (let line of lines) {
+    let trimmed = line.trim();
+    if (trimmed.startsWith('|')) {
+      if (!inTable) {
+        inTable = true;
+        rowCount = 0;
+        tableHtml = '<div style="overflow-x:auto; margin: 12px 0; border: 1px solid var(--border); border-radius: var(--radius-sm);"><table style="width:100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-card);">';
+      }
+      
+      const cols = line.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
+      
+      // Separator row like |---|---|
+      if (cols.every(c => c.match(/^-+$/))) {
+        continue;
+      }
+      
+      const isHeader = rowCount === 0;
+      const rowBg = isHeader ? 'var(--bg-hover)' : (rowCount % 2 === 0 ? 'var(--bg-input)' : 'transparent');
+      const borderStyle = 'border-bottom: 1px solid var(--border);';
+      const cellStyle = `padding: 10px 14px; text-align: left; ${borderStyle}`;
+      
+      tableHtml += `<tr style="background:${rowBg};">`;
+      for (let col of cols) {
+        if (isHeader) {
+          tableHtml += `<th style="${cellStyle} font-weight:600; color:var(--text-primary);">${col}</th>`;
+        } else {
+          tableHtml += `<td style="${cellStyle}">${col}</td>`;
+        }
+      }
+      tableHtml += '</tr>';
+      rowCount++;
+    } else {
+      if (inTable) {
+        inTable = false;
+        tableHtml += '</table></div>';
+        finalLines.push(tableHtml);
+      }
+      finalLines.push(line);
+    }
+  }
+  if (inTable) {
+    tableHtml += '</table></div>';
+    finalLines.push(tableHtml);
+  }
+  
+  return finalLines.join('\n')
+    .replace(/\n/g, '<br/>')
+    .replace(/(<li style="[^"]+">.*<\/li>)/g, '<ul style="margin: 8px 0; padding-left: 0;">$1</ul>')
+    .replace(/<\/ul><br\/>\s*<ul style="margin: 8px 0; padding-left: 0;">/g, '') // collapse consecutive uls
+    .replace(/<br\/><div style="overflow-x:auto;/g, '<div style="overflow-x:auto;')
+    .replace(/<\/table><\/div><br\/>/g, '</table></div>');
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════
+   SEND QUERY
+═══════════════════════════════════════════ */
+async function sendQuery() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  $('send-btn').disabled = true;
+
+  addUserMsg(text);
+  const typing = addTypingIndicator();
+
+  try {
+    const r = await fetch(`${API}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    removeTyping();
+    addBotMsg(data);
+    if (data.intent === 'db_update' || data.intent === 'db_insert') {
+      loadStats();
+    }
+  } catch (e) {
+    removeTyping();
+    const msgs = $('messages');
+    const el = document.createElement('div');
+    el.className = 'msg bot';
+    el.innerHTML = `
+      <div class="avatar bot-av">🤖</div>
+      <div class="bubble" style="border-color:var(--error);color:var(--error)">
+        ❌ Error: ${escHtml(e.message)}. Is the API server running on port 8000?
+      </div>
+    `;
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+    toast('API request failed', 'error');
+  } finally {
+    $('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   QUICK SEARCHES
+═══════════════════════════════════════════ */
+async function quickSearch(role, exp) {
+  let q = `find ${role} candidates`;
+  if (exp > 0) q += ` with more than ${exp} years experience`;
+  input.value = q;
+  await sendQuery();
+}
+
+async function loadAllCandidates() {
+  input.value = 'show all candidates';
+  await sendQuery();
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+(async function init() {
+  await checkHealth();
+  await loadStats();
+  setInterval(checkHealth, 30000);
+  input.focus();
+})();
+</script>
+</body>
+</html>
